@@ -58,7 +58,7 @@ make_bar() {
 }
 
 # Green=low, yellow=medium, red=high (for both context used and rate limit)
-usage_color() { local p=${1:-0}; [ "$p" -ge 90 ] && printf '%s' "$RED" || { [ "$p" -ge 60 ] && printf '%s' "$YEL" || printf '%s' "$GRN"; }; }
+usage_color() { local p=${1:-0}; [ "$p" -ge 67 ] && printf '%s' "$RED" || { [ "$p" -ge 34 ] && printf '%s' "$YEL" || printf '%s' "$GRN"; }; }
 
 # --- Data ---
 dir_name=$(basename "${cwd:-$(pwd)}")

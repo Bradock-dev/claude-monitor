@@ -2,15 +2,17 @@
 
 A live status line for [Claude Code](https://claude.ai/code) that shows your working context at a glance — model, directory, git branch, active agent, active skill, context window usage, and rate limit.
 
+![claude-monitor preview](docs/preview.svg)
+
 ```
-[Sonnet 4.6] │ 📁 my-project │ 🐱 main │ 🤖 @dev │ ⚡ /tlc-spec-driven
-   contexto ███████░░░ 74% │ limite de uso  ███░░░░░░░ 35% ↻ 2h43m │ compact: 0
+[Sonnet 4.6] │ 📁 my-project │ 🐱 feature/auth │ 🤖 @dev │ ⚡ /tlc-spec-driven
+   contexto ███░░░░░░░ 35% │ compact: 2x │ limite de uso  ██████░░░░ 68% ↻ 1h23m
 ```
 
-Colors adapt automatically:
-- **Green** → healthy
-- **Yellow** → warning (context below 30% / rate limit above 60%)
-- **Red** → critical (context below 10% / rate limit above 90%)
+Colors adapt automatically (0–33% green · 34–66% yellow · 67–100% red):
+- **Green** → healthy usage
+- **Yellow** → moderate usage
+- **Red** → critical — approaching limit
 
 ---
 

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="80" role="img" aria-label="claude-monitor preview">
+  <rect width="860" height="80" rx="8" fill="#1a1a1a"/>
+  <text x="16" y="30" font-family="'Cascadia Code','Fira Code','Consolas','Courier New',monospace" font-size="13"><tspan fill="#00d7ff">[Sonnet 4.6]</tspan><tspan fill="#808080"> │ </tspan><tspan fill="#5fafff">📁 my-project</tspan><tspan fill="#808080"> │ </tspan><tspan fill="#ffd75f">🐱 feature/auth</tspan><tspan fill="#808080"> │ </tspan><tspan fill="#d75fff">🤖 @dev</tspan><tspan fill="#808080"> │ </tspan><tspan fill="#d75fff">⚡ /tlc-spec-driven</tspan></text>
+  <text x="16" y="56" font-family="'Cascadia Code','Fira Code','Consolas','Courier New',monospace" font-size="13"><tspan fill="#c0c0c0">   </tspan><tspan fill="#808080">contexto</tspan><tspan fill="#c0c0c0"> </tspan><tspan fill="#5fd700">███░░░░░░░ 35%</tspan><tspan fill="#808080"> │ </tspan><tspan fill="#ffd75f">compact: 2x</tspan><tspan fill="#808080"> │ </tspan><tspan fill="#808080">limite de uso</tspan><tspan fill="#c0c0c0">  </tspan><tspan fill="#ffd75f">██████░░░░ 68%</tspan><tspan fill="#808080"> ↻ 1h23m</tspan></text>
+</svg>
