@@ -5,7 +5,11 @@
 input=$(cat)
 
 # --- Detect python ---
-PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+PYTHON=""
+for _cmd in python python3; do
+    _ver=$(command -v "$_cmd" &>/dev/null && "$_cmd" -c "import sys; print(sys.version_info[0])" 2>/dev/null)
+    [ "$_ver" = "3" ] && PYTHON="$_cmd" && break
+done
 
 # --- Parse JSON ---
 json_out=$(echo "$input" | "$PYTHON" -c "
@@ -125,4 +129,4 @@ q2="${GRY}limite de uso${R}  ${FIVE_C}${five_bar} ${five_disp}${R}${GRY}${reset_
 [ "$compact_n" -gt 0 ] && q3="${YEL}compact: ${compact_n}x${R}" || q3="${GRY}compact: 0${R}"
 
 printf '%s\n' "${p1}${S}${p2}${S}${p3}${S}${p4}${S}${p5}"
-printf '%s\n' "   ${q1}${S}${q2}${S}${q3}"
+printf '%s\n' "   ${q1}${S}${q3}${S}${q2}"
