@@ -86,16 +86,19 @@ The `SessionStart` hook clears the state at the beginning of each session so you
 
 ## Uninstall
 
-Remove the installed files and revert the settings entries manually:
+### Mac / Linux
 
 ```bash
-rm ~/.claude/claude-monitor-statusline.sh
-rm ~/.claude/claude-monitor-hook.sh
-rm ~/.claude/.agent-state
-rm ~/.claude/.skill-state
+bash uninstall.sh
 ```
 
-Then remove the `statusLine` key and the claude-monitor entries from `hooks` in `~/.claude/settings.json`.
+### Windows
+
+```powershell
+powershell -ExecutionPolicy Bypass -File uninstall.ps1
+```
+
+Removes all installed scripts, state files, and reverts `~/.claude/settings.json` automatically.
 
 ---
 
