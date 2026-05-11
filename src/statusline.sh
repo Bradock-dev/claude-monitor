@@ -7,7 +7,7 @@ input=$(cat)
 # --- Detect python ---
 PYTHON=""
 for _cmd in python python3; do
-    _ver=$(command -v "$_cmd" &>/dev/null && "$_cmd" -c "import sys; print(sys.version_info[0])" 2>/dev/null)
+    _ver=$("$_cmd" -c "import sys; print(sys.version_info[0])" 2>/dev/null)
     [ "$_ver" = "3" ] && PYTHON="$_cmd" && break
 done
 
