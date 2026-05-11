@@ -115,9 +115,9 @@ S="${GRY} │ ${R}"
 # === LINE 1: model │ dir │ branch │ agent │ skill ===
 p1="${CYN}[${model_short}]${R}"
 p2="${BLU}📁 ${dir_name}${R}"
-[ -n "$git_branch" ] && p3="${YEL}branch: ${git_branch}${R}" || p3="${GRY}branch: --${R}"
-[ -n "$agent" ]      && p4="${MAG}agente: @${agent}${R}"      || p4="${GRY}agente: --${R}"
-[ -n "$skill" ]      && p5="${MAG}skill: /${skill}${R}"        || p5="${GRY}skill: --${R}"
+[ -n "$git_branch" ] && p3="${YEL}🐱 ${git_branch}${R}"       || p3="${GRY}🐱 --${R}"
+[ -n "$agent" ]      && p4="${MAG}🤖 @${agent}${R}"           || p4="${GRY}🤖 --${R}"
+[ -n "$skill" ]      && p5="${MAG}⚡ /${skill}${R}"            || p5="${GRY}⚡ --${R}"
 
 # === LINE 2: context │ rate limit │ compactions ===
 q1="${GRY}contexto${R} ${CTX_C}${ctx_bar} ${ctx_disp}${R}"

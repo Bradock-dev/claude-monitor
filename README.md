@@ -3,8 +3,8 @@
 A live status line for [Claude Code](https://claude.ai/code) that shows your working context at a glance — model, directory, git branch, active agent, active skill, context window usage, and rate limit.
 
 ```
-[Sonnet 4.6] │ 📁 my-project │ branch: main │ agente: @dev │ skill: /tlc-spec-driven
-   contexto ███████░░░ 74% │ limite de uso  ███░░░░░░░ 35% ↻ 2h43m
+[Sonnet 4.6] │ 📁 my-project │ 🐱 main │ 🤖 @dev │ ⚡ /tlc-spec-driven
+   contexto ███████░░░ 74% │ limite de uso  ███░░░░░░░ 35% ↻ 2h43m │ compact: 0
 ```
 
 Colors adapt automatically:
@@ -20,9 +20,9 @@ Colors adapt automatically:
 |---|---|
 | `[Model]` | Claude model currently in use |
 | `📁 dir` | Current working directory (basename) |
-| `branch:` | Active git branch, or `--` outside a repo |
-| `agente:` | Active agent (any framework using `*:agents:*` skill pattern) |
-| `skill:` | Active skill currently loaded |
+| `🐱` | Active git branch, or `--` outside a repo |
+| `🤖` | Active agent (any framework using `*:agents:*` skill pattern) |
+| `⚡` | Active skill currently loaded |
 | `contexto` | Remaining context window with progress bar |
 | `limite de uso` | 5-hour usage rate with countdown to reset |
 
