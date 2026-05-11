@@ -46,18 +46,28 @@ CYN="${ESC}[38;5;45m"
 MAG="${ESC}[38;5;171m"
 GRY="${ESC}[38;5;244m"
 
+# --- UTF-8 fallback ---
+if locale charmap 2>/dev/null | grep -qi 'utf-8\|utf8' || \
+   echo "${LANG}${LC_ALL}${LC_CTYPE}" | grep -qi 'utf-8\|utf8'; then
+    BF="█" BE="░" PIPE="│" ARROW="↻"
+    I_DIR="📁 " I_GIT="🐱 " I_AGT="🤖 " I_SKL="⚡ "
+else
+    BF="#" BE="-" PIPE="|" ARROW="~"
+    I_DIR="dir:" I_GIT="git:" I_AGT="bot:" I_SKL="sk:"
+fi
+
 # --- Progress bar ---
 make_bar() {
     local pct=${1:-0} width=${2:-10} filled empty bar=""
     filled=$(( pct * width / 100 ))
     [ "$filled" -gt "$width" ] && filled=$width
     empty=$(( width - filled ))
-    for ((i=0; i<filled; i++)); do bar="${bar}█"; done
-    for ((i=0; i<empty; i++)); do bar="${bar}░"; done
+    for ((i=0; i<filled; i++)); do bar="${bar}${BF}"; done
+    for ((i=0; i<empty; i++)); do bar="${bar}${BE}"; done
     printf '%s' "$bar"
 }
 
-# Green=low, yellow=medium, red=high (for both context used and rate limit)
+# 0-33% green · 34-66% yellow · 67-100% red
 usage_color() { local p=${1:-0}; [ "$p" -ge 67 ] && printf '%s' "$RED" || { [ "$p" -ge 34 ] && printf '%s' "$YEL" || printf '%s' "$GRN"; }; }
 
 # --- Data ---
@@ -84,8 +94,7 @@ ctx_bar=$(make_bar "$ctx_int" 10)
 PREV_CTX_FILE="$STATE_DIR/.ctx-prev"
 COMPACT_FILE="$STATE_DIR/.compaction-count"
 
-prev_ctx=0
-compact_n=0
+prev_ctx=0; compact_n=0
 [ -f "$PREV_CTX_FILE" ] && prev_ctx=$(tr -d '[:space:]' < "$PREV_CTX_FILE" 2>/dev/null); [ -z "$prev_ctx" ] && prev_ctx=0
 [ -f "$COMPACT_FILE"  ] && compact_n=$(tr -d '[:space:]' < "$COMPACT_FILE"  2>/dev/null); [ -z "$compact_n" ] && compact_n=0
 
@@ -106,7 +115,7 @@ if [ -n "$five_pct" ]; then
         now=$(date +%s); diff=$(( five_rst - now ))
         if [ "$diff" -gt 0 ]; then
             m=$(( diff / 60 )); h=$(( m / 60 )); m=$(( m % 60 )); s=$(( diff % 60 ))
-            [ "$h" -gt 0 ] && reset_str=" ↻ ${h}h${m}m" || reset_str=" ↻ ${m}m${s}s"
+            [ "$h" -gt 0 ] && reset_str=" ${ARROW} ${h}h${m}m" || reset_str=" ${ARROW} ${m}m${s}s"
         fi
     fi
 fi
@@ -114,16 +123,16 @@ FIVE_C=$(usage_color "$five_int")
 five_bar=$(make_bar "$five_int" 10)
 
 # --- Separator ---
-S="${GRY} │ ${R}"
+S="${GRY} ${PIPE} ${R}"
 
-# === LINE 1: model │ dir │ branch │ agent │ skill ===
+# === LINE 1: model | dir | branch | agent | skill ===
 p1="${CYN}[${model_short}]${R}"
-p2="${BLU}📁 ${dir_name}${R}"
-[ -n "$git_branch" ] && p3="${YEL}🐱 ${git_branch}${R}"       || p3="${GRY}🐱 --${R}"
-[ -n "$agent" ]      && p4="${MAG}🤖 @${agent}${R}"           || p4="${GRY}🤖 --${R}"
-[ -n "$skill" ]      && p5="${MAG}⚡ /${skill}${R}"            || p5="${GRY}⚡ --${R}"
+p2="${BLU}${I_DIR}${dir_name}${R}"
+[ -n "$git_branch" ] && p3="${YEL}${I_GIT}${git_branch}${R}" || p3="${GRY}${I_GIT}--${R}"
+[ -n "$agent" ]      && p4="${MAG}${I_AGT}@${agent}${R}"     || p4="${GRY}${I_AGT}--${R}"
+[ -n "$skill" ]      && p5="${MAG}${I_SKL}/${skill}${R}"      || p5="${GRY}${I_SKL}--${R}"
 
-# === LINE 2: context │ rate limit │ compactions ===
+# === LINE 2: context | compact | rate limit ===
 q1="${GRY}contexto${R} ${CTX_C}${ctx_bar} ${ctx_disp}${R}"
 q2="${GRY}limite de uso${R}  ${FIVE_C}${five_bar} ${five_disp}${R}${GRY}${reset_str}${R}"
 [ "$compact_n" -gt 0 ] && q3="${YEL}compact: ${compact_n}x${R}" || q3="${GRY}compact: 0${R}"
