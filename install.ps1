@@ -36,8 +36,10 @@ Copy-Item "$ScriptDir\src\statusline.sh"       "$ClaudeDir\claude-monitor-status
 Copy-Item "$ScriptDir\src\hooks\post-skill.sh" "$ClaudeDir\claude-monitor-hook.sh"       -Force
 
 # Init state files
-"" | Out-File "$ClaudeDir\.agent-state" -Encoding utf8 -NoNewline
-"" | Out-File "$ClaudeDir\.skill-state" -Encoding utf8 -NoNewline
+"" | Out-File "$ClaudeDir\.agent-state"       -Encoding utf8 -NoNewline
+"" | Out-File "$ClaudeDir\.skill-state"       -Encoding utf8 -NoNewline
+"" | Out-File "$ClaudeDir\.ctx-prev"          -Encoding utf8 -NoNewline
+"" | Out-File "$ClaudeDir\.compaction-count"  -Encoding utf8 -NoNewline
 
 Write-Host "Scripts installed."
 
@@ -60,7 +62,7 @@ settings["statusLine"] = {
 
 hooks = settings.setdefault("hooks", {})
 
-clear_cmd = "bash -c 'printf \"\" > ~/.claude/.agent-state && printf \"\" > ~/.claude/.skill-state'"
+clear_cmd = "bash -c 'printf \"\" > ~/.claude/.agent-state && printf \"\" > ~/.claude/.skill-state && printf \"\" > ~/.claude/.ctx-prev && printf \"\" > ~/.claude/.compaction-count'"
 session_start = hooks.setdefault("SessionStart", [])
 if not any(clear_cmd in str(h) for h in session_start):
     session_start.append({"hooks": [{"type": "command", "command": clear_cmd}]})

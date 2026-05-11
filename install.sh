@@ -22,7 +22,7 @@ cp "$SCRIPT_DIR/src/hooks/post-skill.sh" "$CLAUDE/claude-monitor-hook.sh"
 chmod +x "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh"
 
 # Init state files
-touch "$CLAUDE/.agent-state" "$CLAUDE/.skill-state"
+touch "$CLAUDE/.agent-state" "$CLAUDE/.skill-state" "$CLAUDE/.ctx-prev" "$CLAUDE/.compaction-count"
 
 echo "Scripts installed."
 
@@ -48,7 +48,7 @@ hooks = settings.setdefault("hooks", {})
 
 # SessionStart — clear state files
 session_start = hooks.setdefault("SessionStart", [])
-clear_cmd = "bash -c 'printf \"\" > ~/.claude/.agent-state && printf \"\" > ~/.claude/.skill-state'"
+clear_cmd = "bash -c 'printf \"\" > ~/.claude/.agent-state && printf \"\" > ~/.claude/.skill-state && printf \"\" > ~/.claude/.ctx-prev && printf \"\" > ~/.claude/.compaction-count'"
 if not any(clear_cmd in str(h) for h in session_start):
     session_start.append({"hooks": [{"type": "command", "command": clear_cmd}]})
 

@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Runtime state files (created by install, not part of source)
+.agent-state
+.skill-state
+.ctx-prev
+.compaction-count

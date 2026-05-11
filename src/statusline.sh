@@ -16,8 +16,8 @@ try:
     rl  = d.get('rate_limits', {}).get('five_hour', {})
     print(d.get('cwd', ''))
     print(d.get('model', {}).get('display_name', ''))
-    print(str(ctx.get('remaining_percentage', '')))
     print(str(ctx.get('used_percentage', '')))
+    print(str(ctx.get('remaining_percentage', '')))
     print(str(rl.get('used_percentage', '')))
     print(str(rl.get('resets_at', '')))
 except:
@@ -26,8 +26,8 @@ except:
 
 cwd=$(echo "$json_out"      | sed -n '1p')
 model=$(echo "$json_out"    | sed -n '2p')
-ctx_rem=$(echo "$json_out"  | sed -n '3p')
-ctx_used=$(echo "$json_out" | sed -n '4p')
+ctx_used=$(echo "$json_out" | sed -n '3p')
+ctx_rem=$(echo "$json_out"  | sed -n '4p')
 five_pct=$(echo "$json_out" | sed -n '5p')
 five_rst=$(echo "$json_out" | sed -n '6p')
 
@@ -53,8 +53,8 @@ make_bar() {
     printf '%s' "$bar"
 }
 
-ctx_color()  { local p=${1:-0}; [ "$p" -le 10 ] && printf '%s' "$RED" || { [ "$p" -le 30 ] && printf '%s' "$YEL" || printf '%s' "$GRN"; }; }
-rate_color() { local p=${1:-0}; [ "$p" -ge 90 ] && printf '%s' "$RED" || { [ "$p" -ge 60 ] && printf '%s' "$YEL" || printf '%s' "$GRN"; }; }
+# Green=low, yellow=medium, red=high (for both context used and rate limit)
+usage_color() { local p=${1:-0}; [ "$p" -ge 90 ] && printf '%s' "$RED" || { [ "$p" -ge 60 ] && printf '%s' "$YEL" || printf '%s' "$GRN"; }; }
 
 # --- Data ---
 dir_name=$(basename "${cwd:-$(pwd)}")
@@ -65,15 +65,34 @@ STATE_DIR="$HOME/.claude"
 agent=$([ -f "$STATE_DIR/.agent-state" ] && tr -d '[:space:]' < "$STATE_DIR/.agent-state" 2>/dev/null || echo "")
 skill=$([ -f "$STATE_DIR/.skill-state" ]  && tr -d '[:space:]' < "$STATE_DIR/.skill-state"  2>/dev/null || echo "")
 
-# --- Context window ---
+# --- Context window (used %) ---
 ctx_int=0; ctx_disp="?"
-if [ -n "$ctx_rem" ]; then
-    ctx_int=$(printf '%.0f' "$ctx_rem"); ctx_disp="${ctx_int}%"
-elif [ -n "$ctx_used" ]; then
-    u=$(printf '%.0f' "$ctx_used"); ctx_int=$(( 100 - u )); ctx_disp="${ctx_int}%"
+if [ -n "$ctx_used" ]; then
+    ctx_int=$(printf '%.0f' "$ctx_used"); ctx_disp="${ctx_int}%"
+elif [ -n "$ctx_rem" ]; then
+    r=$(printf '%.0f' "$ctx_rem"); ctx_int=$(( 100 - r )); ctx_disp="${ctx_int}%"
 fi
-CTX_C=$(ctx_color "$ctx_int")
+CTX_C=$(usage_color "$ctx_int")
 ctx_bar=$(make_bar "$ctx_int" 10)
+
+# --- Compaction detection ---
+# When used% drops 15+ points between turns, the window was compacted.
+PREV_CTX_FILE="$STATE_DIR/.ctx-prev"
+COMPACT_FILE="$STATE_DIR/.compaction-count"
+
+prev_ctx=0
+compact_n=0
+[ -f "$PREV_CTX_FILE" ] && prev_ctx=$(tr -d '[:space:]' < "$PREV_CTX_FILE" 2>/dev/null); [ -z "$prev_ctx" ] && prev_ctx=0
+[ -f "$COMPACT_FILE"  ] && compact_n=$(tr -d '[:space:]' < "$COMPACT_FILE"  2>/dev/null); [ -z "$compact_n" ] && compact_n=0
+
+if [ "$prev_ctx" -gt 0 ] && [ "$ctx_int" -gt 0 ]; then
+    drop=$(( prev_ctx - ctx_int ))
+    if [ "$drop" -ge 15 ]; then
+        compact_n=$(( compact_n + 1 ))
+        echo "$compact_n" > "$COMPACT_FILE"
+    fi
+fi
+[ "$ctx_int" -gt 0 ] && echo "$ctx_int" > "$PREV_CTX_FILE"
 
 # --- 5h rate limit ---
 five_int=0; five_disp="?"; reset_str=""
@@ -87,7 +106,7 @@ if [ -n "$five_pct" ]; then
         fi
     fi
 fi
-FIVE_C=$(rate_color "$five_int")
+FIVE_C=$(usage_color "$five_int")
 five_bar=$(make_bar "$five_int" 10)
 
 # --- Separator ---
@@ -100,9 +119,10 @@ p2="${BLU}📁 ${dir_name}${R}"
 [ -n "$agent" ]      && p4="${MAG}agente: @${agent}${R}"      || p4="${GRY}agente: --${R}"
 [ -n "$skill" ]      && p5="${MAG}skill: /${skill}${R}"        || p5="${GRY}skill: --${R}"
 
-# === LINE 2: context │ rate limit ===
+# === LINE 2: context │ rate limit │ compactions ===
 q1="${GRY}contexto${R} ${CTX_C}${ctx_bar} ${ctx_disp}${R}"
 q2="${GRY}limite de uso${R}  ${FIVE_C}${five_bar} ${five_disp}${R}${GRY}${reset_str}${R}"
+[ "$compact_n" -gt 0 ] && q3="${YEL}compact: ${compact_n}x${R}" || q3="${GRY}compact: 0${R}"
 
 printf '%s\n' "${p1}${S}${p2}${S}${p3}${S}${p4}${S}${p5}"
-printf '%s\n' "   ${q1}${S}${q2}"
+printf '%s\n' "   ${q1}${S}${q2}${S}${q3}"
