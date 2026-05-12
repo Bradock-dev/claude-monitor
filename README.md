@@ -61,6 +61,28 @@ Restart Claude Code after installing.
 
 ---
 
+## Upgrading
+
+Re-run the installer from the repo directory — it updates the scripts and `settings.json` automatically.
+
+### Mac / Linux
+
+```bash
+git pull
+bash install.sh
+```
+
+### Windows
+
+```powershell
+git pull
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+Restart Claude Code after upgrading.
+
+---
+
 ## Agent & Skill tracking
 
 claude-monitor tracks active agents and skills automatically via a `PostToolUse` hook on Claude Code's `Skill` tool.
