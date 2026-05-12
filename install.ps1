@@ -68,11 +68,12 @@ if not any(clear_cmd in str(h) for h in session_start):
     session_start.append({"hooks": [{"type": "command", "command": clear_cmd}]})
 
 post_tool = hooks.setdefault("PostToolUse", [])
-if not any(h.get("matcher") == "Skill" for h in post_tool):
-    post_tool.append({
-        "matcher": "Skill",
-        "hooks": [{"type": "command", "command": "bash ~/.claude/claude-monitor-hook.sh"}]
-    })
+hook_cmd = "bash ~/.claude/claude-monitor-hook.sh"
+existing = next((h for h in post_tool if h.get("matcher") == "Skill"), None)
+if existing:
+    existing["hooks"] = [{"type": "command", "command": hook_cmd}]
+else:
+    post_tool.append({"matcher": "Skill", "hooks": [{"type": "command", "command": hook_cmd}]})
 
 with open(settings_path, "w", encoding="utf-8") as f:
     json.dump(settings, f, indent=2)

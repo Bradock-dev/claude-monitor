@@ -4,7 +4,10 @@ set -euo pipefail
 
 CLAUDE="$HOME/.claude"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null || echo "")
+PYTHON=""
+for _cmd in python3 python; do
+    if "$_cmd" -c "import sys" 2>/dev/null; then PYTHON="$_cmd"; break; fi
+done
 
 echo "claude-monitor installer"
 echo "========================"
@@ -52,13 +55,14 @@ clear_cmd = "bash -c 'printf \"\" > ~/.claude/.agent-state && printf \"\" > ~/.c
 if not any(clear_cmd in str(h) for h in session_start):
     session_start.append({"hooks": [{"type": "command", "command": clear_cmd}]})
 
-# PostToolUse — track skill/agent
+# PostToolUse — track skill/agent (always set correct command path)
 post_tool = hooks.setdefault("PostToolUse", [])
-if not any(h.get("matcher") == "Skill" for h in post_tool):
-    post_tool.append({
-        "matcher": "Skill",
-        "hooks": [{"type": "command", "command": "bash ~/.claude/claude-monitor-hook.sh"}]
-    })
+hook_cmd = "bash ~/.claude/claude-monitor-hook.sh"
+existing = next((h for h in post_tool if h.get("matcher") == "Skill"), None)
+if existing:
+    existing["hooks"] = [{"type": "command", "command": hook_cmd}]
+else:
+    post_tool.append({"matcher": "Skill", "hooks": [{"type": "command", "command": hook_cmd}]})
 
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
