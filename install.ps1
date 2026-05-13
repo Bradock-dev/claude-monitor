@@ -35,6 +35,12 @@ foreach ($cmd in @("bash", "C:\Program Files\Git\bin\bash.exe")) {
 Copy-Item "$ScriptDir\src\statusline.sh"       "$ClaudeDir\claude-monitor-statusline.sh" -Force
 Copy-Item "$ScriptDir\src\hooks\post-skill.sh" "$ClaudeDir\claude-monitor-hook.sh"       -Force
 
+# Normalize to LF — bash scripts fail silently with CRLF on Windows
+foreach ($f in @("$ClaudeDir\claude-monitor-statusline.sh", "$ClaudeDir\claude-monitor-hook.sh")) {
+    $content = [System.IO.File]::ReadAllText($f) -replace "`r`n", "`n"
+    [System.IO.File]::WriteAllText($f, $content, (New-Object System.Text.UTF8Encoding $false))
+}
+
 # Init state files
 "" | Out-File "$ClaudeDir\.agent-state"       -Encoding utf8 -NoNewline
 "" | Out-File "$ClaudeDir\.skill-state"       -Encoding utf8 -NoNewline

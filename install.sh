@@ -22,6 +22,8 @@ mkdir -p "$CLAUDE"
 # Copy scripts
 cp "$SCRIPT_DIR/src/statusline.sh"       "$CLAUDE/claude-monitor-statusline.sh"
 cp "$SCRIPT_DIR/src/hooks/post-skill.sh" "$CLAUDE/claude-monitor-hook.sh"
+# Normalize to LF — bash scripts fail silently with CRLF
+sed -i 's/\r//' "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh"
 chmod +x "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh"
 
 # Init state files
