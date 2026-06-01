@@ -15,10 +15,13 @@ foreach ($f in @("claude-monitor-statusline.sh", "claude-monitor-hook.sh")) {
 }
 Write-Host "Scripts removed."
 
-# Remove state files
+# Remove state files (legacy global + per-session)
 foreach ($f in @(".agent-state", ".skill-state", ".ctx-prev", ".compaction-count")) {
     $p = "$ClaudeDir\$f"
     if (Test-Path $p) { Remove-Item $p -Force }
+}
+foreach ($pattern in @(".agent-state-*", ".skill-state-*", ".ctx-prev-*", ".compaction-count-*")) {
+    Get-ChildItem -Path $ClaudeDir -Filter $pattern -File -ErrorAction SilentlyContinue | Remove-Item -Force
 }
 Write-Host "State files removed."
 
@@ -58,7 +61,10 @@ hooks = settings.get("hooks", {})
 
 session = hooks.get("SessionStart", [])
 before = len(session)
-hooks["SessionStart"] = [h for h in session if ".agent-state" not in str(h)]
+hooks["SessionStart"] = [
+    h for h in session
+    if ".agent-state" not in str(h) and "ctx-prev" not in str(h) and "compaction-count" not in str(h)
+]
 if len(hooks["SessionStart"]) != before:
     changed = True
 
@@ -66,7 +72,7 @@ post = hooks.get("PostToolUse", [])
 before = len(post)
 hooks["PostToolUse"] = [
     h for h in post
-    if not (h.get("matcher") == "Skill" and "claude-monitor-hook" in str(h))
+    if "claude-monitor-hook" not in str(h)
 ]
 if len(hooks["PostToolUse"]) != before:
     changed = True

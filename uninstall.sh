@@ -13,8 +13,9 @@ rm -f "$CLAUDE/claude-monitor-statusline.sh"
 rm -f "$CLAUDE/claude-monitor-hook.sh"
 echo "Scripts removed."
 
-# Remove state files
+# Remove state files (legacy global + per-session)
 rm -f "$CLAUDE/.agent-state" "$CLAUDE/.skill-state" "$CLAUDE/.ctx-prev" "$CLAUDE/.compaction-count"
+find "$CLAUDE" -maxdepth 1 -type f \( -name ".agent-state-*" -o -name ".skill-state-*" -o -name ".ctx-prev-*" -o -name ".compaction-count-*" \) -delete 2>/dev/null || true
 echo "State files removed."
 
 # Patch settings.json
@@ -44,19 +45,22 @@ if isinstance(sl, dict) and "claude-monitor" in sl.get("command", ""):
 
 hooks = settings.get("hooks", {})
 
-# Remove SessionStart clear hook added by claude-monitor
+# Remove SessionStart entries added by claude-monitor (legacy clear cmd or new cleanup cmd)
 session = hooks.get("SessionStart", [])
 before = len(session)
-hooks["SessionStart"] = [h for h in session if ".agent-state" not in str(h)]
+hooks["SessionStart"] = [
+    h for h in session
+    if ".agent-state" not in str(h) and "ctx-prev" not in str(h) and "compaction-count" not in str(h)
+]
 if len(hooks["SessionStart"]) != before:
     changed = True
 
-# Remove PostToolUse Skill hook added by claude-monitor
+# Remove PostToolUse hook added by claude-monitor (matcher Skill legacy or .* current)
 post = hooks.get("PostToolUse", [])
 before = len(post)
 hooks["PostToolUse"] = [
     h for h in post
-    if not (h.get("matcher") == "Skill" and "claude-monitor-hook" in str(h))
+    if "claude-monitor-hook" not in str(h)
 ]
 if len(hooks["PostToolUse"]) != before:
     changed = True

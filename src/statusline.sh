@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # claude-monitor — statusline script
 # https://github.com/BRADOCK-DEV/claude-monitor
+# State files are scoped per session_id so multiple concurrent terminals don't collide.
 
 input=$(cat)
 
@@ -24,8 +25,9 @@ try:
     print(str(ctx.get('remaining_percentage', '')))
     print(str(rl.get('used_percentage', '')))
     print(str(rl.get('resets_at', '')))
+    print(d.get('session_id', ''))
 except:
-    for _ in range(6): print('')
+    for _ in range(7): print('')
 " 2>/dev/null)
 
 cwd=$(echo "$json_out"      | sed -n '1p')
@@ -34,6 +36,11 @@ ctx_used=$(echo "$json_out" | sed -n '3p')
 ctx_rem=$(echo "$json_out"  | sed -n '4p')
 five_pct=$(echo "$json_out" | sed -n '5p')
 five_rst=$(echo "$json_out" | sed -n '6p')
+sid=$(echo "$json_out"      | sed -n '7p')
+
+# Sanitize session_id (UUID-like — letters, digits, hyphens only). Fallback to "default".
+sid=$(printf '%s' "$sid" | tr -cd 'a-fA-F0-9-')
+[ -z "$sid" ] && sid="default"
 
 # --- ANSI ---
 ESC=$'\033'
@@ -76,8 +83,13 @@ model_short=$(echo "${model:-?}" | sed 's/Claude //')
 git_branch=$(git -C "${cwd:-.}" --no-optional-locks rev-parse --abbrev-ref HEAD 2>/dev/null)
 
 STATE_DIR="$HOME/.claude"
-agent=$([ -f "$STATE_DIR/.agent-state" ] && tr -d '[:space:]' < "$STATE_DIR/.agent-state" 2>/dev/null || echo "")
-skill=$([ -f "$STATE_DIR/.skill-state" ]  && tr -d '[:space:]' < "$STATE_DIR/.skill-state"  2>/dev/null || echo "")
+AGENT_FILE="$STATE_DIR/.agent-state-$sid"
+SKILL_FILE="$STATE_DIR/.skill-state-$sid"
+PREV_CTX_FILE="$STATE_DIR/.ctx-prev-$sid"
+COMPACT_FILE="$STATE_DIR/.compaction-count-$sid"
+
+agent=$([ -f "$AGENT_FILE" ] && tr -d '[:space:]' < "$AGENT_FILE" 2>/dev/null || echo "")
+skill=$([ -f "$SKILL_FILE" ] && tr -d '[:space:]' < "$SKILL_FILE" 2>/dev/null || echo "")
 
 # --- Context window (used %) ---
 ctx_int=0; ctx_disp="?"
@@ -91,9 +103,6 @@ ctx_bar=$(make_bar "$ctx_int" 10)
 
 # --- Compaction detection ---
 # When used% drops 15+ points between turns, the window was compacted.
-PREV_CTX_FILE="$STATE_DIR/.ctx-prev"
-COMPACT_FILE="$STATE_DIR/.compaction-count"
-
 prev_ctx=0; compact_n=0
 [ -f "$PREV_CTX_FILE" ] && prev_ctx=$(tr -d '[:space:]' < "$PREV_CTX_FILE" 2>/dev/null); [ -z "$prev_ctx" ] && prev_ctx=0
 [ -f "$COMPACT_FILE"  ] && compact_n=$(tr -d '[:space:]' < "$COMPACT_FILE"  2>/dev/null); [ -z "$compact_n" ] && compact_n=0

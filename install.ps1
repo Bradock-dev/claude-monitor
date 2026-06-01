@@ -41,11 +41,11 @@ foreach ($f in @("$ClaudeDir\claude-monitor-statusline.sh", "$ClaudeDir\claude-m
     [System.IO.File]::WriteAllText($f, $content, (New-Object System.Text.UTF8Encoding $false))
 }
 
-# Init state files
-"" | Out-File "$ClaudeDir\.agent-state"       -Encoding utf8 -NoNewline
-"" | Out-File "$ClaudeDir\.skill-state"       -Encoding utf8 -NoNewline
-"" | Out-File "$ClaudeDir\.ctx-prev"          -Encoding utf8 -NoNewline
-"" | Out-File "$ClaudeDir\.compaction-count"  -Encoding utf8 -NoNewline
+# Remove legacy global state files (replaced by per-session files)
+foreach ($f in @(".agent-state", ".skill-state", ".ctx-prev", ".compaction-count")) {
+    $p = "$ClaudeDir\$f"
+    if (Test-Path $p) { Remove-Item $p -Force }
+}
 
 Write-Host "Scripts installed."
 
@@ -68,18 +68,21 @@ settings["statusLine"] = {
 
 hooks = settings.setdefault("hooks", {})
 
-clear_cmd = "bash -c 'printf \"\" > ~/.claude/.agent-state && printf \"\" > ~/.claude/.skill-state && printf \"\" > ~/.claude/.ctx-prev && printf \"\" > ~/.claude/.compaction-count'"
+cleanup_cmd = "bash -c 'find ~/.claude -maxdepth 1 -type f \\( -name \".agent-state-*\" -o -name \".skill-state-*\" -o -name \".ctx-prev-*\" -o -name \".compaction-count-*\" \\) -mmin +1440 -delete 2>/dev/null || true'"
 session_start = hooks.setdefault("SessionStart", [])
-if not any(clear_cmd in str(h) for h in session_start):
-    session_start.append({"hooks": [{"type": "command", "command": clear_cmd}]})
+# Remove legacy claude-monitor entries (anything that touches .agent-state)
+session_start[:] = [h for h in session_start if ".agent-state" not in str(h)]
+session_start.append({"hooks": [{"type": "command", "command": cleanup_cmd}]})
 
 post_tool = hooks.setdefault("PostToolUse", [])
 hook_cmd = "bash ~/.claude/claude-monitor-hook.sh"
-existing = next((h for h in post_tool if h.get("matcher") == "Skill"), None)
+# Remove old "Skill" matcher entries (now handled internally by the hook script)
+post_tool[:] = [h for h in post_tool if h.get("matcher") != "Skill"]
+existing = next((h for h in post_tool if h.get("matcher") == ".*"), None)
 if existing:
     existing["hooks"] = [{"type": "command", "command": hook_cmd}]
 else:
-    post_tool.append({"matcher": "Skill", "hooks": [{"type": "command", "command": hook_cmd}]})
+    post_tool.append({"matcher": ".*", "hooks": [{"type": "command", "command": hook_cmd}]})
 
 with open(settings_path, "w", encoding="utf-8") as f:
     json.dump(settings, f, indent=2)

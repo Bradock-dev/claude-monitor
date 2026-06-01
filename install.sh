@@ -30,8 +30,8 @@ else
 fi
 chmod +x "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh"
 
-# Init state files
-touch "$CLAUDE/.agent-state" "$CLAUDE/.skill-state" "$CLAUDE/.ctx-prev" "$CLAUDE/.compaction-count"
+# Remove legacy global state files (replaced by per-session files)
+rm -f "$CLAUDE/.agent-state" "$CLAUDE/.skill-state" "$CLAUDE/.ctx-prev" "$CLAUDE/.compaction-count"
 
 echo "Scripts installed."
 
@@ -55,20 +55,23 @@ settings["statusLine"] = {
 
 hooks = settings.setdefault("hooks", {})
 
-# SessionStart — clear state files
+# SessionStart — garbage-collect orphan per-session state files (>24h since last write)
 session_start = hooks.setdefault("SessionStart", [])
-clear_cmd = "bash -c 'printf \"\" > ~/.claude/.agent-state && printf \"\" > ~/.claude/.skill-state && printf \"\" > ~/.claude/.ctx-prev && printf \"\" > ~/.claude/.compaction-count'"
-if not any(clear_cmd in str(h) for h in session_start):
-    session_start.append({"hooks": [{"type": "command", "command": clear_cmd}]})
+cleanup_cmd = "bash -c 'find ~/.claude -maxdepth 1 -type f \\( -name \".agent-state-*\" -o -name \".skill-state-*\" -o -name \".ctx-prev-*\" -o -name \".compaction-count-*\" \\) -mmin +1440 -delete 2>/dev/null || true'"
+# Remove legacy claude-monitor entries (anything that touches .agent-state)
+session_start[:] = [h for h in session_start if ".agent-state" not in str(h)]
+session_start.append({"hooks": [{"type": "command", "command": cleanup_cmd}]})
 
 # PostToolUse — track skill/agent (always set correct command path)
 post_tool = hooks.setdefault("PostToolUse", [])
 hook_cmd = "bash ~/.claude/claude-monitor-hook.sh"
-existing = next((h for h in post_tool if h.get("matcher") == "Skill"), None)
+# Remove old "Skill" matcher entries (now handled internally by the hook script)
+post_tool[:] = [h for h in post_tool if h.get("matcher") != "Skill"]
+existing = next((h for h in post_tool if h.get("matcher") == ".*"), None)
 if existing:
     existing["hooks"] = [{"type": "command", "command": hook_cmd}]
 else:
-    post_tool.append({"matcher": "Skill", "hooks": [{"type": "command", "command": hook_cmd}]})
+    post_tool.append({"matcher": ".*", "hooks": [{"type": "command", "command": hook_cmd}]})
 
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
