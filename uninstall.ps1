@@ -9,7 +9,7 @@ Write-Host "claude-monitor uninstaller"
 Write-Host "=========================="
 
 # Remove scripts
-foreach ($f in @("claude-monitor-statusline.sh", "claude-monitor-hook.sh")) {
+foreach ($f in @("claude-monitor-statusline.sh", "claude-monitor-hook.sh", "claude-monitor-prompt-hook.sh")) {
     $p = "$ClaudeDir\$f"
     if (Test-Path $p) { Remove-Item $p -Force }
 }
@@ -77,7 +77,16 @@ hooks["PostToolUse"] = [
 if len(hooks["PostToolUse"]) != before:
     changed = True
 
-for key in ["SessionStart", "PostToolUse"]:
+prompt = hooks.get("UserPromptSubmit", [])
+before = len(prompt)
+hooks["UserPromptSubmit"] = [
+    h for h in prompt
+    if "claude-monitor-prompt-hook" not in str(h)
+]
+if len(hooks["UserPromptSubmit"]) != before:
+    changed = True
+
+for key in ["SessionStart", "PostToolUse", "UserPromptSubmit"]:
     if key in hooks and not hooks[key]:
         del hooks[key]
 if not hooks:

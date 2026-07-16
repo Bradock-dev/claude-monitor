@@ -85,9 +85,12 @@ Restart Claude Code after upgrading.
 
 ## Agent & Skill tracking
 
-claude-monitor tracks active agents and skills automatically via a `PostToolUse` hook on Claude Code's `Skill` tool.
+claude-monitor tracks active agents and skills automatically through two hooks:
 
-**Works with any framework** that follows the `namespace:agents:name` skill naming convention (e.g., `AIOX:agents:dev`, `myfw:agents:qa`). Frameworks that don't use this pattern will still show the active skill name.
+- a `PostToolUse` hook on Claude Code's `Skill` tool — catches agents/skills activated via the `Skill` tool
+- a `UserPromptSubmit` hook — catches agents activated by typing the slash command directly (e.g. `/AIOX:agents:dev`), which loads a slash command and never triggers the `Skill` tool
+
+**Works with any framework** that follows the `namespace:agents:name` naming convention (e.g., `AIOX:agents:dev`, `myfw:agents:qa`). Frameworks that don't use this pattern will still show the active skill name.
 
 The `SessionStart` hook clears the state at the beginning of each session so you never see stale data.
 
@@ -95,14 +98,16 @@ The `SessionStart` hook clears the state at the beginning of each session so you
 
 ## How it works
 
-1. `install.sh` / `install.ps1` copies two scripts to `~/.claude/`:
+1. `install.sh` / `install.ps1` copies three scripts to `~/.claude/`:
    - `claude-monitor-statusline.sh` — reads the JSON payload Claude Code provides each turn and renders the two-line status
-   - `claude-monitor-hook.sh` — PostToolUse hook that writes agent/skill state to `~/.claude/.agent-state` and `~/.claude/.skill-state`
+   - `claude-monitor-hook.sh` — PostToolUse hook that writes agent/skill state (per session) to `~/.claude/.agent-state-<id>` and `~/.claude/.skill-state-<id>`
+   - `claude-monitor-prompt-hook.sh` — UserPromptSubmit hook that records the active agent when it's activated via a slash command
 
 2. `settings.json` is patched to wire up:
    - `statusLine` → runs `claude-monitor-statusline.sh` each turn
-   - `PostToolUse` (matcher: `Skill`) → runs `claude-monitor-hook.sh`
-   - `SessionStart` → clears state files
+   - `PostToolUse` → runs `claude-monitor-hook.sh`
+   - `UserPromptSubmit` → runs `claude-monitor-prompt-hook.sh`
+   - `SessionStart` → garbage-collects stale per-session state files
 
 ---
 

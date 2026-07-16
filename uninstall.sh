@@ -11,6 +11,7 @@ echo "=========================="
 # Remove scripts
 rm -f "$CLAUDE/claude-monitor-statusline.sh"
 rm -f "$CLAUDE/claude-monitor-hook.sh"
+rm -f "$CLAUDE/claude-monitor-prompt-hook.sh"
 echo "Scripts removed."
 
 # Remove state files (legacy global + per-session)
@@ -65,8 +66,18 @@ hooks["PostToolUse"] = [
 if len(hooks["PostToolUse"]) != before:
     changed = True
 
+# Remove UserPromptSubmit hook added by claude-monitor
+prompt = hooks.get("UserPromptSubmit", [])
+before = len(prompt)
+hooks["UserPromptSubmit"] = [
+    h for h in prompt
+    if "claude-monitor-prompt-hook" not in str(h)
+]
+if len(hooks["UserPromptSubmit"]) != before:
+    changed = True
+
 # Clean up empty lists
-for key in ["SessionStart", "PostToolUse"]:
+for key in ["SessionStart", "PostToolUse", "UserPromptSubmit"]:
     if key in hooks and not hooks[key]:
         del hooks[key]
 if not hooks:

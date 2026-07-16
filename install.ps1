@@ -32,11 +32,12 @@ foreach ($cmd in @("bash", "C:\Program Files\Git\bin\bash.exe")) {
     if (Get-Command $cmd -ErrorAction SilentlyContinue) { $bashAvailable = $cmd; break }
 }
 
-Copy-Item "$ScriptDir\src\statusline.sh"       "$ClaudeDir\claude-monitor-statusline.sh" -Force
-Copy-Item "$ScriptDir\src\hooks\post-skill.sh" "$ClaudeDir\claude-monitor-hook.sh"       -Force
+Copy-Item "$ScriptDir\src\statusline.sh"        "$ClaudeDir\claude-monitor-statusline.sh"  -Force
+Copy-Item "$ScriptDir\src\hooks\post-skill.sh"  "$ClaudeDir\claude-monitor-hook.sh"        -Force
+Copy-Item "$ScriptDir\src\hooks\user-prompt.sh" "$ClaudeDir\claude-monitor-prompt-hook.sh" -Force
 
 # Normalize to LF — bash scripts fail silently with CRLF on Windows
-foreach ($f in @("$ClaudeDir\claude-monitor-statusline.sh", "$ClaudeDir\claude-monitor-hook.sh")) {
+foreach ($f in @("$ClaudeDir\claude-monitor-statusline.sh", "$ClaudeDir\claude-monitor-hook.sh", "$ClaudeDir\claude-monitor-prompt-hook.sh")) {
     $content = [System.IO.File]::ReadAllText($f) -replace "`r`n", "`n"
     [System.IO.File]::WriteAllText($f, $content, (New-Object System.Text.UTF8Encoding $false))
 }
@@ -83,6 +84,12 @@ if existing:
     existing["hooks"] = [{"type": "command", "command": hook_cmd}]
 else:
     post_tool.append({"matcher": ".*", "hooks": [{"type": "command", "command": hook_cmd}]})
+
+# UserPromptSubmit — catch agents activated via slash command (no Skill tool call)
+prompt_submit = hooks.setdefault("UserPromptSubmit", [])
+prompt_cmd = "bash ~/.claude/claude-monitor-prompt-hook.sh"
+prompt_submit[:] = [h for h in prompt_submit if "claude-monitor-prompt-hook" not in str(h)]
+prompt_submit.append({"hooks": [{"type": "command", "command": prompt_cmd}]})
 
 with open(settings_path, "w", encoding="utf-8") as f:
     json.dump(settings, f, indent=2)

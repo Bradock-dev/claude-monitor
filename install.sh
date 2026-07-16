@@ -20,15 +20,16 @@ fi
 mkdir -p "$CLAUDE"
 
 # Copy scripts
-cp "$SCRIPT_DIR/src/statusline.sh"       "$CLAUDE/claude-monitor-statusline.sh"
-cp "$SCRIPT_DIR/src/hooks/post-skill.sh" "$CLAUDE/claude-monitor-hook.sh"
+cp "$SCRIPT_DIR/src/statusline.sh"        "$CLAUDE/claude-monitor-statusline.sh"
+cp "$SCRIPT_DIR/src/hooks/post-skill.sh"  "$CLAUDE/claude-monitor-hook.sh"
+cp "$SCRIPT_DIR/src/hooks/user-prompt.sh" "$CLAUDE/claude-monitor-prompt-hook.sh"
 # Normalize to LF — bash scripts fail silently with CRLF (sed -i differs on macOS vs Linux)
 if sed --version 2>/dev/null | grep -q GNU; then
-    sed -i 's/\r//' "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh"
+    sed -i 's/\r//' "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh" "$CLAUDE/claude-monitor-prompt-hook.sh"
 else
-    sed -i '' 's/\r//' "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh"
+    sed -i '' 's/\r//' "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh" "$CLAUDE/claude-monitor-prompt-hook.sh"
 fi
-chmod +x "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh"
+chmod +x "$CLAUDE/claude-monitor-statusline.sh" "$CLAUDE/claude-monitor-hook.sh" "$CLAUDE/claude-monitor-prompt-hook.sh"
 
 # Remove legacy global state files (replaced by per-session files)
 rm -f "$CLAUDE/.agent-state" "$CLAUDE/.skill-state" "$CLAUDE/.ctx-prev" "$CLAUDE/.compaction-count"
@@ -72,6 +73,12 @@ if existing:
     existing["hooks"] = [{"type": "command", "command": hook_cmd}]
 else:
     post_tool.append({"matcher": ".*", "hooks": [{"type": "command", "command": hook_cmd}]})
+
+# UserPromptSubmit — catch agents activated via slash command (no Skill tool call)
+prompt_submit = hooks.setdefault("UserPromptSubmit", [])
+prompt_cmd = "bash ~/.claude/claude-monitor-prompt-hook.sh"
+prompt_submit[:] = [h for h in prompt_submit if "claude-monitor-prompt-hook" not in str(h)]
+prompt_submit.append({"hooks": [{"type": "command", "command": prompt_cmd}]})
 
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
